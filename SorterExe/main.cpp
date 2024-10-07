@@ -4,7 +4,9 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
+#define TEST_MODEL_DIR      "../test_files/"
 #define CONFIG_FILE_PATH "../config.txt"
 
 
@@ -27,7 +29,7 @@ void SaveBinToTxt (const std::string& theFileName)
 int main (int argc, char **argv)
 {
     if (argc != 3) {
-        std::cout << "Input file name of tape which should be sorted and file name of tape where sort should be execute!";
+        std::cout << "Input file name of tape which should be sorted and file name of tape where sort should be execute!" << std::endl;
     }
 
     {
@@ -37,8 +39,10 @@ int main (int argc, char **argv)
         SortTape (anInTape, anOutTape, 512, 4);
     }
 
+#if 1
     SaveBinToTxt (argv[1]);
     SaveBinToTxt (argv[2]);
+#endif
 
     return 0;
 }

@@ -2,9 +2,7 @@
 #include "TapeSort.h"
 
 #include <filesystem>
-#include <memory>
 #include <vector>
-#include <iostream>
 
 
 using TapeSizeTType = std::pair <Tape, size_t>;
@@ -22,13 +20,13 @@ size_t GetNumberCountInTempTapes (const TapeSizeTVectorType& theTapes, size_t th
     return aNumberCount;
 }
 
-void MergeTapes (TapeSizeTVectorType& theTapes, size_t theBufferTapeInd, bool theIsLessComporator = true)
+void MergeTapes (TapeSizeTVectorType& theTapes, const std::vector<int>& theBuffer, size_t theBufferSize, size_t theBufferTapeInd, bool theIsLessComporator = true)
 {
     const size_t aTapesCount = theTapes.size();
-    std::vector<int> aFrontElems (aTapesCount - 1, theIsLessComporator ? INT_MIN : INT_MAX);
+    std::vector<int> aFrontElems (aTapesCount, theIsLessComporator ? INT_MIN : INT_MAX);
 
-    const auto& SetDefualtValue = [&](size_t theIndx) {
-        aFrontElems[theIndx] = theIsLessComporator ? INT_MIN : INT_MAX;
+    const auto& SetDefualtValue = [&](int& theCell) {
+        theCell = theIsLessComporator ? INT_MIN : INT_MAX;
     };
 
     for (size_t i = 0; i < aTapesCount; ++i) {
@@ -38,14 +36,19 @@ void MergeTapes (TapeSizeTVectorType& theTapes, size_t theBufferTapeInd, bool th
 
         size_t anElemInd = i > theBufferTapeInd ? i - 1 : i;
         if (theTapes[i].second == 0) {
-            SetDefualtValue (anElemInd);
+            SetDefualtValue (aFrontElems[anElemInd]);
             continue;
         }
 
         aFrontElems[anElemInd] = theTapes[i].first.Read();
     }
 
-    size_t aNumberCount = GetNumberCountInTempTapes (theTapes, theBufferTapeInd);
+    size_t aNumberCount = GetNumberCountInTempTapes (theTapes, theBufferTapeInd) + theBufferSize;
+    if (theBufferSize) {
+        aFrontElems[aTapesCount - 1] = theBuffer[--theBufferSize];
+    } else {
+        SetDefualtValue (aFrontElems[aTapesCount - 1]);
+    }
 
     if (aNumberCount == 0) {
         return;
@@ -68,11 +71,20 @@ void MergeTapes (TapeSizeTVectorType& theTapes, size_t theBufferTapeInd, bool th
             theTapes[theBufferTapeInd].first.MoveToNext();
         }
 
+        if (anElemInd == aTapesCount - 1) {
+            if (theBufferSize) {
+                aFrontElems[aTapesCount - 1] = theBuffer[--theBufferSize];
+            } else {
+                SetDefualtValue (aFrontElems[aTapesCount - 1]);
+            }
+            continue;
+        }
+
         if (--theTapes[aLastUsedTapeInd].second) {
             theTapes[aLastUsedTapeInd].first.MoveToPrev();
             aFrontElems[anElemInd] = theTapes[aLastUsedTapeInd].first.Read();
         } else {
-            SetDefualtValue (anElemInd);
+            SetDefualtValue (aFrontElems[anElemInd]);
         }
 
     } while (--aLeftNumberCount);
@@ -112,7 +124,7 @@ void WriteToTape (const std::vector<int>& theNumbers, size_t theWrittenElemCount
 size_t FillBuffer (std::vector<int>& theBuffer, const Tape& theInTape, bool theIsLessComporator)
 {
     size_t aWrittenElemCount = 0;
-    while (aWrittenElemCount < theBuffer.size() && !theInTape.IsOut()) {
+    while (aWrittenElemCount < theBuffer.size() && !theInTape.IsEnd()) {
         theBuffer[aWrittenElemCount++] = theInTape.Read();
         theInTape.MoveToNext();
     }
@@ -137,7 +149,7 @@ void FillTemporaryTapes (const Tape& theInTape,
         size_t aCurBufferSize = FillBuffer (theBuffer, theInTape, theIsLessComporator);
         WriteToTape (theBuffer, aCurBufferSize, theTempTapes[i]);
 
-        if (theInTape.IsOut()) {
+        if (theInTape.IsEnd()) {
             return;
         }
     }
@@ -166,13 +178,16 @@ void SortTape (const Tape& theInTape, Tape& theOutTape, size_t theRAMLimit, size
 
     int aBufferTapeIndx = 0;
     FillTemporaryTapes (theInTape, aTempTapes, aBufferTapeIndx, aBufferTapeIndx, aBuffer, !aBufferTapeIndx);
-    while (!theInTape.IsOut()) {
-        MergeTapes (aTempTapes, aBufferTapeIndx, !aBufferTapeIndx);
+    size_t aBufferSize = FillBuffer (aBuffer, theInTape, !aBufferTapeIndx);
+    while (!theInTape.IsEnd()) {
+        MergeTapes (aTempTapes, aBuffer, aBufferSize, aBufferTapeIndx, !aBufferTapeIndx);
 
         FillTemporaryTapes (theInTape, aTempTapes, aBufferTapeIndx, !aBufferTapeIndx, aBuffer, aBufferTapeIndx);
+
         aBufferTapeIndx = !aBufferTapeIndx;
+        aBufferSize = FillBuffer (aBuffer, theInTape, !aBufferTapeIndx);
     }
-    MergeTapes (aTempTapes, aBufferTapeIndx, !aBufferTapeIndx);
+    MergeTapes (aTempTapes, aBuffer, aBufferSize, aBufferTapeIndx, !aBufferTapeIndx);
 
     if (aBufferTapeIndx) {
         aTempTapes[aBufferTapeIndx].first.Rewind();

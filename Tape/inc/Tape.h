@@ -25,7 +25,7 @@ public:
     _EXPORT int Read() const;
     _EXPORT void Write (int theNumber);
 
-    _EXPORT bool IsOut() const;
+    _EXPORT bool IsEnd() const;
 
 private:
     ImplType myImpl;

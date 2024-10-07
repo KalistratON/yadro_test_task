@@ -11,19 +11,6 @@
 #define CONFIG_FILE_PATH    "../config.txt"
 
 
-static void SaveBinToTxt (const std::string& theFileName)
-{
-    std::ifstream aInFile (theFileName, std::ios::binary);
-    std::ofstream anOutFile (theFileName + "_out.txt");
-
-    int aNum;
-    aInFile >> aNum;
-    while (!aInFile.eof()) {
-        anOutFile << aNum << '\n';
-        aInFile >> aNum;
-    }
-}
-
 static void DoTest (const std::vector <std::pair <std::string, size_t>>& theFileNamesSizes)
 {
     for (const auto& aFileNameSize : theFileNamesSizes) {
@@ -37,13 +24,16 @@ static void DoTest (const std::vector <std::pair <std::string, size_t>>& theFile
 
             size_t aCount = 0;
             int aPrevNumber = INT_MAX;
-            while (!anOutTape.IsOut()) {
+            while (!anOutTape.IsEnd()) {
                 int aCurNumber = anOutTape.Read();
-                anOutTape.MoveToPrev();
 
                 ++aCount;
                 EXPECT_TRUE (aCurNumber <= aPrevNumber);
                 aPrevNumber = aCurNumber;
+
+                if (!anOutTape.MoveToPrev()) {
+                    break;
+                }
             }
 
             EXPECT_TRUE (aCount == aFileNameSize.second);

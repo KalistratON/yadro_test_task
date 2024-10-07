@@ -190,7 +190,7 @@ void TapeImpl::Write (int theNumber)
 #endif
 }
 
-bool TapeImpl::IsOut() const
+bool TapeImpl::IsEnd() const
 {
     fseek (myFile, 0, SEEK_CUR);
 
@@ -240,7 +240,7 @@ void Tape::Write (int theNumber)
     return myImpl->Write (theNumber);
 }
 
-bool Tape::IsOut() const
+bool Tape::IsEnd() const
 {
-    return myImpl->IsOut();
+    return myImpl->IsEnd();
 }

@@ -20,7 +20,7 @@ public:
     int Read() const;
     void Write (int theNumber);
 
-    bool IsOut() const;
+    bool IsEnd() const;
 
 private:
     int myLatencies[4];
