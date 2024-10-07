@@ -1,0 +1,4 @@
+WriteLatency: 1
+ReadLatency: 1
+MoveLatency: 1
+RewindLatency: 1
